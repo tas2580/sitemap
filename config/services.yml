@@ -7,3 +7,4 @@ services:
             - @controller.helper
             - @template
             - %core.php_ext%
+            - @ext.manager

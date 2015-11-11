@@ -21,7 +21,8 @@ class sitemap
 	protected $template;
 	/** @var string php_ext */
 	protected $php_ext;
-
+	/** @var string */
+	protected $phpbb_extension_manager;
 	/**
 	* Constructor
 	*
@@ -29,23 +30,28 @@ class sitemap
 	* @param \phpbb\controller\helper	$helper
 	* @param \phpbb\template\template	$template
 	*/
-	public function __construct(\phpbb\auth\auth $auth, \phpbb\db\driver\driver_interface $db, \phpbb\controller\helper $helper, \phpbb\template\template $template, $php_ext)
+	public function __construct(\phpbb\auth\auth $auth, \phpbb\db\driver\driver_interface $db, \phpbb\controller\helper $helper, \phpbb\template\template $template, $php_ext, $phpbb_extension_manager)
 	{
 		$this->auth = $auth;
 		$this->db = $db;
 		$this->helper = $helper;
 		$this->template = $template;
 		$this->php_ext = $php_ext;
+		$this->phpbb_extension_manager = $phpbb_extension_manager;
 	}
 
 	public function sitemap($id)
 	{
+		header('Content-Type: application/xml');
 		$board_url = generate_board_url();
 		$sql = 'SELECT forum_name, forum_last_post_time
 			FROM ' . FORUMS_TABLE . '
 			WHERE forum_id = ' . (int) $id;
 		$result = $this->db->sql_query($sql);
 		$row = $this->db->sql_fetchrow($result);
+
+		$style_xsl = $board_url . '/'. $this->phpbb_extension_manager->get_extension_path('tas2580/sitemap', false) . 'style.xsl';
+		$this->template->assign_var('U_XSL_FILE', $style_xsl);
 
 		$this->template->assign_block_vars('urlset', array(
 			'URL'			=> $board_url . 'viewforum.' . $this->php_ext . '?f=' . $id,
@@ -60,7 +66,7 @@ class sitemap
 			if ($row['topic_status'] <> ITEM_MOVED)
 			{
 				$this->template->assign_block_vars('urlset', array(
-					'URL'			=> $board_url .  'viewtopic.' . $this->php_ext  . '?f=' . $id . '&t='. $row['topic_id'],
+					'URL'			=> $board_url .  '/viewtopic.' . $this->php_ext  . '?f=' . $id . '&t='. $row['topic_id'],
 					'TIME'		=> ($row['topic_last_post_time'] <> 0)  ? gmdate('Y-m-d\TH:i:s+00:00', (int) $row['topic_last_post_time']) : '',
 				));
 			}
@@ -74,6 +80,9 @@ class sitemap
 		header('Content-Type: application/xml');
 
 		$board_url = generate_board_url();
+		$style_xsl = $board_url . '/'. $this->phpbb_extension_manager->get_extension_path('tas2580/sitemap', false) . 'style.xsl';
+		$this->template->assign_var('U_XSL_FILE', $style_xsl);
+
 		$sql = 'SELECT forum_id, forum_name, forum_last_post_time
 			FROM ' . FORUMS_TABLE . '
 			WHERE forum_type = ' . (int) FORUM_POST . '
