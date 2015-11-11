@@ -9,6 +9,8 @@
 
 namespace tas2580\sitemap\controller;
 
+use Symfony\Component\HttpFoundation\Response;
+
 class sitemap
 {
 	/** @var \phpbb\auth\auth */
@@ -17,12 +19,11 @@ class sitemap
 	protected $db;
 	/** @var \phpbb\controller\helper */
 	protected $helper;
-	/** @var \phpbb\template\template */
-	protected $template;
 	/** @var string php_ext */
 	protected $php_ext;
 	/** @var string */
 	protected $phpbb_extension_manager;
+	
 	/**
 	* Constructor
 	*
@@ -30,19 +31,17 @@ class sitemap
 	* @param \phpbb\controller\helper	$helper
 	* @param \phpbb\template\template	$template
 	*/
-	public function __construct(\phpbb\auth\auth $auth, \phpbb\db\driver\driver_interface $db, \phpbb\controller\helper $helper, \phpbb\template\template $template, $php_ext, $phpbb_extension_manager)
+	public function __construct(\phpbb\auth\auth $auth, \phpbb\db\driver\driver_interface $db, \phpbb\controller\helper $helper, $php_ext, $phpbb_extension_manager)
 	{
 		$this->auth = $auth;
 		$this->db = $db;
 		$this->helper = $helper;
-		$this->template = $template;
 		$this->php_ext = $php_ext;
 		$this->phpbb_extension_manager = $phpbb_extension_manager;
 	}
 
 	public function sitemap($id)
 	{
-		header('Content-Type: application/xml');
 		$board_url = generate_board_url();
 		$sql = 'SELECT forum_name, forum_last_post_time
 			FROM ' . FORUMS_TABLE . '
@@ -51,12 +50,15 @@ class sitemap
 		$row = $this->db->sql_fetchrow($result);
 
 		$style_xsl = $board_url . '/'. $this->phpbb_extension_manager->get_extension_path('tas2580/sitemap', false) . 'style.xsl';
-		$this->template->assign_var('U_XSL_FILE', $style_xsl);
 
-		$this->template->assign_block_vars('urlset', array(
-			'URL'			=> $board_url . 'viewforum.' . $this->php_ext . '?f=' . $id,
-			'TIME'		=> gmdate('Y-m-d\TH:i:s+00:00', (int) $row['forum_last_post_time']),
-		));
+		$xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+		$xml .= '<?xml-stylesheet type="text/xsl" href="' . $style_xsl . '" ?>' . "\n";
+		$xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+		$xml .= '	<url>' . "\n";
+		$xml .= '		<loc>' . $board_url . '/viewforum.' . $this->php_ext . '?f=' . $id . '</loc>' . "\n";
+		$xml .= ($row['forum_last_post_time'] <> 0) ? '		<lastmod>' . gmdate('Y-m-d\TH:i:s+00:00', (int) $row['forum_last_post_time']) . '</lastmod>' . "\n" : '';
+		$xml .= '	</url>' . "\n";
+
 		$sql = 'SELECT topic_id, topic_title, topic_last_post_time, topic_status
 			FROM ' . TOPICS_TABLE . '
 			WHERE forum_id = ' . (int) $id;
@@ -65,23 +67,26 @@ class sitemap
 		{
 			if ($row['topic_status'] <> ITEM_MOVED)
 			{
-				$this->template->assign_block_vars('urlset', array(
-					'URL'			=> $board_url .  '/viewtopic.' . $this->php_ext  . '?f=' . $id . '&t='. $row['topic_id'],
-					'TIME'		=> ($row['topic_last_post_time'] <> 0)  ? gmdate('Y-m-d\TH:i:s+00:00', (int) $row['topic_last_post_time']) : '',
-				));
+				$xml .= '	<url>' . "\n";
+				$xml .= '		<loc>' . $board_url . '/viewtopic.' . $this->php_ext . '?f=' . $id . '&amp;t=' . $row['topic_id'] . '</loc>' . "\n";
+				$xml .= ($row['topic_last_post_time'] <> 0) ? '		<lastmod>' . gmdate('Y-m-d\TH:i:s+00:00', (int) $row['topic_last_post_time']) . '</lastmod>' . "\n" : '';
+				$xml .= '	</url>' . "\n";
 			}
 		}
+		$xml .= '</urlset>';
 
-		return $this->helper->render('sitemap.html');
+		header("Content-type: application/xml");
+		return new Response($xml);
 	}
 
 	public function index()
 	{
-		header('Content-Type: application/xml');
-
 		$board_url = generate_board_url();
 		$style_xsl = $board_url . '/'. $this->phpbb_extension_manager->get_extension_path('tas2580/sitemap', false) . 'style.xsl';
-		$this->template->assign_var('U_XSL_FILE', $style_xsl);
+
+		$xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+		$xml .= '<?xml-stylesheet type="text/xsl" href="' . $style_xsl . '" ?>' . "\n";
+		$xml .= '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
 
 		$sql = 'SELECT forum_id, forum_name, forum_last_post_time
 			FROM ' . FORUMS_TABLE . '
@@ -92,13 +97,15 @@ class sitemap
 		{
 			if ($this->auth->acl_get('f_list', $row['forum_id']))
 			{
-				$this->template->assign_block_vars('forumlist', array(
-					'URL'			=> $this->helper->route('tas2580_sitemap_sitemap', array('id' => $row['forum_id']), true, '', \Symfony\Component\Routing\Generator\UrlGeneratorInterface::ABSOLUTE_URL),
-					'TIME'		=>($row['forum_last_post_time'] <> 0) ? gmdate('Y-m-d\TH:i:s+00:00', (int) $row['forum_last_post_time']) : '',
-				));
+				$xml .= '	<sitemap>' . "\n";
+				$xml .= '		<loc>' . $this->helper->route('tas2580_sitemap_sitemap', array('id' => $row['forum_id']), true, '', \Symfony\Component\Routing\Generator\UrlGeneratorInterface::ABSOLUTE_URL) . '</loc>' . "\n";
+				$xml .= ($row['forum_last_post_time'] <> 0) ? '		<lastmod>' . gmdate('Y-m-d\TH:i:s+00:00', (int) $row['forum_last_post_time']) . '</lastmod>' . "\n" : '';
+				$xml .= '	</sitemap>' . "\n";
 			}
 		}
+		$xml .= '</sitemapindex>';
 
-		return $this->helper->render('sitemap_index.html');
+		header("Content-type: application/xml");
+		return new Response($xml);
 	}
 }

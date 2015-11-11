@@ -5,6 +5,5 @@ services:
             - @auth
             - @dbal.conn
             - @controller.helper
-            - @template
             - %core.php_ext%
             - @ext.manager
