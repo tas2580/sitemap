@@ -15,6 +15,8 @@ class sitemap
 {
 	/** @var \phpbb\auth\auth */
 	protected $auth;
+	/** @var \phpbb\config\config */
+	protected $config;
 	/** @var \phpbb\db\driver\driver */
 	protected $db;
 	/** @var \phpbb\controller\helper */
@@ -31,9 +33,10 @@ class sitemap
 	* @param \phpbb\controller\helper	$helper
 	* @param \phpbb\template\template	$template
 	*/
-	public function __construct(\phpbb\auth\auth $auth, \phpbb\db\driver\driver_interface $db, \phpbb\controller\helper $helper, $php_ext, $phpbb_extension_manager)
+	public function __construct(\phpbb\auth\auth $auth, \phpbb\config\config $config, \phpbb\db\driver\driver_interface $db, \phpbb\controller\helper $helper, $php_ext, $phpbb_extension_manager)
 	{
 		$this->auth = $auth;
+		$this->config = $config;
 		$this->db = $db;
 		$this->helper = $helper;
 		$this->php_ext = $php_ext;
@@ -64,7 +67,21 @@ class sitemap
 		$xml .= ($row['forum_last_post_time'] <> 0) ? '		<lastmod>' . gmdate('Y-m-d\TH:i:s+00:00', (int) $row['forum_last_post_time']) . '</lastmod>' . "\n" : '';
 		$xml .= '	</url>' . "\n";
 
-		$sql = 'SELECT topic_id, topic_title, topic_last_post_time, topic_status
+		// Forums with more that 1 Page
+		if ( $row['forum_topics'] > $this->config['topics_per_page'] )
+		{
+			$pages = $row['forum_topics'] / $this->config['topics_per_page'];
+			for ($i = 1; $i < $pages; $i++)
+			{
+				$s = $s + $this->config['topics_per_page'];
+				$xml .= '	<url>' . "\n";
+				$xml .= '		<loc>' . $board_url . '/viewforum.' . $this->php_ext . '?f=' . $id . '&amp;start=' . $s . '</loc>' . "\n";
+				$xml .= ($row['forum_last_post_time'] <> 0) ? '		<lastmod>' . gmdate('Y-m-d\TH:i:s+00:00', (int) $row['forum_last_post_time']) . '</lastmod>' . "\n" : '';
+				$xml .= '	</url>' . "\n";
+			}
+		}
+
+		$sql = 'SELECT topic_id, topic_title, topic_last_post_time, topic_status, topic_posts_approved
 			FROM ' . TOPICS_TABLE . '
 			WHERE forum_id = ' . (int) $id;
 		$result = $this->db->sql_query($sql);
@@ -76,6 +93,20 @@ class sitemap
 				$xml .= '		<loc>' . $board_url . '/viewtopic.' . $this->php_ext . '?f=' . $id . '&amp;t=' . $row['topic_id'] . '</loc>' . "\n";
 				$xml .= ($row['topic_last_post_time'] <> 0) ? '		<lastmod>' . gmdate('Y-m-d\TH:i:s+00:00', (int) $row['topic_last_post_time']) . '</lastmod>' . "\n" : '';
 				$xml .= '	</url>' . "\n";
+			}
+			// Topics with more that 1 Page
+			if ( $row['topic_posts_approved'] > $this->config['posts_per_page'] )
+			{
+				$s = 0;
+				$pages = $row['topic_posts_approved'] / $this->config['posts_per_page'];
+				for ($i = 1; $i < $pages; $i++)
+				{
+					$s = $s + $this->config['posts_per_page'];
+					$xml .= '	<url>' . "\n";
+					$xml .= '		<loc>' . $board_url . '/viewtopic.' . $this->php_ext . '?f=' . $id . '&amp;t=' . $row['topic_id'] . '&amp;start=' . $s . '</loc>'. "\n";
+					$xml .= '		<lastmod>' . gmdate('Y-m-d\TH:i:s+00:00', $row['topic_last_post_time']) . '</lastmod>' .  "\n";
+					$xml .= '	</url>' . "\n";
+				}
 			}
 		}
 		$xml .= '</urlset>';

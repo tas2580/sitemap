@@ -3,6 +3,7 @@ services:
         class: tas2580\sitemap\controller\sitemap
         arguments:
             - @auth
+            - @config
             - @dbal.conn
             - @controller.helper
             - %core.php_ext%
