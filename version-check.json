@@ -1,0 +1,11 @@
+{
+	"stable": {
+		"0.1": {
+			"current": "0.1.0",
+			"download": "https://tas2580.net/downloads/phpbb-sitemap/",
+			"announcement": "",
+			"eol": null,
+			"security": false
+		}
+	}
+}

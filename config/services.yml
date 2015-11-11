@@ -1,0 +1,9 @@
+services:
+    tas2580.sitemap.sitemap:
+        class: tas2580\sitemap\controller\sitemap
+        arguments:
+            - @auth
+            - @dbal.conn
+            - @controller.helper
+            - @template
+            - %core.php_ext%
