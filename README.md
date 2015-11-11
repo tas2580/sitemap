@@ -12,12 +12,12 @@ INSTALATION
 To install this extension download it from here and upload the files in your forum under <b>/ext/tas2580/sitemap</b>.
 After that go to the Admin panel of your forum and navigate in to Customise -> Extension Management -> Extensions. Search this extension in the list of extensions and click on Enable.
 
-After the installation you can find your sitemap under YOUR_FORUM_URL/sitemap.xml
+After the installation you can find your sitemap under YOUR_FORUM_URL/app.php/sitemap.xml
 
 SUPPORT
 -------
 You can get support for this extension on <a href="https://www.phpbb.com/community/viewtopic.php?f=456&t=0">phpbb.com</a>
-or in german on <a href="https://www.phpbb.de/community/viewtopic.php?f=149&t=0">phpbb.de</a>. For more informations look at
+or in german on <a href="https://www.phpbb.de/community/viewtopic.php?f=149&t=235901">phpbb.de</a>. For more informations look at
 <a href="https://tas2580.net/downloads/phpbb-sitemap/">my Website</a>.
 
 LICENSE
