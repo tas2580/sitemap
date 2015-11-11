@@ -23,7 +23,7 @@ class sitemap
 	protected $php_ext;
 	/** @var string */
 	protected $phpbb_extension_manager;
-	
+
 	/**
 	* Constructor
 	*
@@ -42,6 +42,11 @@ class sitemap
 
 	public function sitemap($id)
 	{
+		if (!$this->auth->acl_get('f_list', $id))
+		{
+			trigger_error('SORRY_AUTH_READ');
+		}
+
 		$board_url = generate_board_url();
 		$sql = 'SELECT forum_name, forum_last_post_time
 			FROM ' . FORUMS_TABLE . '
