@@ -15,7 +15,7 @@ After the installation you can find your sitemap under YOUR_FORUM_URL/app.php/si
 
 SUPPORT
 -------
-You can get support for this extension on <a href="https://www.phpbb.com/community/viewtopic.php?f=456&t=0">phpbb.com</a>
+You can get support for this extension on <a href="https://www.phpbb.com/community/viewtopic.php?f=456&t=2344456">phpbb.com</a>
 or in german on <a href="https://www.phpbb.de/community/viewtopic.php?f=149&t=235901">phpbb.de</a>. For more informations look at
 <a href="https://tas2580.net/downloads/phpbb-sitemap/">my Website</a>.
 
