@@ -111,8 +111,10 @@ class sitemap
 		}
 		$xml .= '</urlset>';
 
-		header("Content-type: application/xml");
-		return new Response($xml);
+		$headers = array(
+			'Content-Type'		=> 'application/xml; charset=UTF-8',
+		);
+		return new Response($xml, '200', $headers);
 	}
 
 	public function index()
@@ -141,7 +143,9 @@ class sitemap
 		}
 		$xml .= '</sitemapindex>';
 
-		header("Content-type: application/xml");
-		return new Response($xml);
+		$headers = array(
+			'Content-Type'		=> 'application/xml; charset=UTF-8',
+		);
+		return new Response($xml, '200', $headers);
 	}
 }
