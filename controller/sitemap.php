@@ -29,9 +29,12 @@ class sitemap
 	/**
 	* Constructor
 	*
-	* @param \phpbb\auth\auth			$auth		Auth object
-	* @param \phpbb\controller\helper	$helper
-	* @param \phpbb\template\template	$template
+	* @param \phpbb\auth\auth					$auth					Auth object
+	* @param \phpbb\config\config				$config					Config object
+	* @param \phpbb\db\driver\driver_interface		$db						Database object
+	* @param \phpbb\controller\helper				$helper					Helper object
+	* @param string							$php_ext					phpEx
+	* @param \phpbb_extension_manager			$phpbb_extension_manager    phpbb_extension_manager
 	*/
 	public function __construct(\phpbb\auth\auth $auth, \phpbb\config\config $config, \phpbb\db\driver\driver_interface $db, \phpbb\controller\helper $helper, $php_ext, $phpbb_extension_manager)
 	{
@@ -70,6 +73,7 @@ class sitemap
 		// Forums with more that 1 Page
 		if ( $row['forum_topics'] > $this->config['topics_per_page'] )
 		{
+			$s = 0;
 			$pages = $row['forum_topics'] / $this->config['topics_per_page'];
 			for ($i = 1; $i < $pages; $i++)
 			{
