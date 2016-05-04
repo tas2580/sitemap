@@ -6,5 +6,6 @@ services:
             - @config
             - @dbal.conn
             - @controller.helper
+            - @dispatcher
             - %core.php_ext%
             - @ext.manager

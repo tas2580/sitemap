@@ -15,14 +15,22 @@ class sitemap
 {
 	/** @var \phpbb\auth\auth */
 	protected $auth;
+
 	/** @var \phpbb\config\config */
 	protected $config;
+
 	/** @var \phpbb\db\driver\driver */
 	protected $db;
+
 	/** @var \phpbb\controller\helper */
 	protected $helper;
+
+	/** @var \phpbb\event\dispatcher_interface */
+	protected $phpbb_dispatcher;
+
 	/** @var string php_ext */
 	protected $php_ext;
+
 	/** @var string */
 	protected $phpbb_extension_manager;
 
@@ -36,16 +44,25 @@ class sitemap
 	* @param string							$php_ext					phpEx
 	* @param \phpbb_extension_manager			$phpbb_extension_manager    phpbb_extension_manager
 	*/
-	public function __construct(\phpbb\auth\auth $auth, \phpbb\config\config $config, \phpbb\db\driver\driver_interface $db, \phpbb\controller\helper $helper, $php_ext, $phpbb_extension_manager)
+	public function __construct(\phpbb\auth\auth $auth, \phpbb\config\config $config, \phpbb\db\driver\driver_interface $db, \phpbb\controller\helper $helper, \phpbb\event\dispatcher_interface $phpbb_dispatcher, $php_ext, $phpbb_extension_manager)
 	{
 		$this->auth = $auth;
 		$this->config = $config;
 		$this->db = $db;
 		$this->helper = $helper;
+		$this->phpbb_dispatcher = $phpbb_dispatcher;
 		$this->php_ext = $php_ext;
 		$this->phpbb_extension_manager = $phpbb_extension_manager;
+
+		$this->board_url = generate_board_url();
 	}
 
+	/**
+	 * Generate sitemap for a forum
+	 *
+	 * @param int		$id		The forum ID
+	 * @return object
+	 */
 	public function sitemap($id)
 	{
 		if (!$this->auth->acl_get('f_list', $id))
@@ -53,83 +70,87 @@ class sitemap
 			trigger_error('SORRY_AUTH_READ');
 		}
 
-		$board_url = generate_board_url();
-		$sql = 'SELECT forum_name, forum_last_post_time
+		$sql = 'SELECT forum_id, forum_name, forum_last_post_time
 			FROM ' . FORUMS_TABLE . '
 			WHERE forum_id = ' . (int) $id;
 		$result = $this->db->sql_query($sql);
 		$row = $this->db->sql_fetchrow($result);
 
-		$style_xsl = $board_url . '/'. $this->phpbb_extension_manager->get_extension_path('tas2580/sitemap', false) . 'style.xsl';
-
-		$xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-		$xml .= '<?xml-stylesheet type="text/xsl" href="' . $style_xsl . '" ?>' . "\n";
-		$xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
-		$xml .= '	<url>' . "\n";
-		$xml .= '		<loc>' . $board_url . '/viewforum.' . $this->php_ext . '?f=' . $id . '</loc>' . "\n";
-		$xml .= ($row['forum_last_post_time'] <> 0) ? '		<lastmod>' . gmdate('Y-m-d\TH:i:s+00:00', (int) $row['forum_last_post_time']) . '</lastmod>' . "\n" : '';
-		$xml .= '	</url>' . "\n";
+		// URL for the forum
+		$url_data[] = array(
+			'url'		=> $this->board_url . '/viewforum.' . $this->php_ext . '?f=' . $id,
+			'time'	=> $row['forum_last_post_time'],
+			'row'		=> $row,
+			'start'	=> 0
+		);
 
 		// Forums with more that 1 Page
-		if ( $row['forum_topics'] > $this->config['topics_per_page'] )
+		if ($row['forum_topics'] > $this->config['topics_per_page'])
 		{
-			$s = 0;
+			$start = 0;
 			$pages = $row['forum_topics'] / $this->config['topics_per_page'];
 			for ($i = 1; $i < $pages; $i++)
 			{
-				$s = $s + $this->config['topics_per_page'];
-				$xml .= '	<url>' . "\n";
-				$xml .= '		<loc>' . $board_url . '/viewforum.' . $this->php_ext . '?f=' . $id . '&amp;start=' . $s . '</loc>' . "\n";
-				$xml .= ($row['forum_last_post_time'] <> 0) ? '		<lastmod>' . gmdate('Y-m-d\TH:i:s+00:00', (int) $row['forum_last_post_time']) . '</lastmod>' . "\n" : '';
-				$xml .= '	</url>' . "\n";
+				$start = $start + $this->config['topics_per_page'];
+				$url_data[] = array(
+					'url'		=> $this->board_url . '/viewforum.' . $this->php_ext . '?f=' . $id . '&amp;start=' . $start,
+					'time'	=> $row['forum_last_post_time'],
+					'row'		=> $row,
+					'start'	=> $start
+				);
 			}
 		}
 
+		// Get all topics in the forum
 		$sql = 'SELECT topic_id, topic_title, topic_last_post_time, topic_status, topic_posts_approved
 			FROM ' . TOPICS_TABLE . '
 			WHERE forum_id = ' . (int) $id;
 		$result = $this->db->sql_query($sql);
-		while ($row = $this->db->sql_fetchrow($result))
+		while ($topic_row = $this->db->sql_fetchrow($result))
 		{
-			if ($row['topic_status'] <> ITEM_MOVED)
+			// Put forum data to each topic row
+			$topic_row['forum_id'] = $id;
+			$topic_row['forum_name'] = $row['forum_name'];
+			$topic_row['forum_last_post_time'] = $row['forum_last_post_time'];
+
+			// URL for topic
+			if ($topic_row['topic_status'] <> ITEM_MOVED)
 			{
-				$xml .= '	<url>' . "\n";
-				$xml .= '		<loc>' . $board_url . '/viewtopic.' . $this->php_ext . '?f=' . $id . '&amp;t=' . $row['topic_id'] . '</loc>' . "\n";
-				$xml .= ($row['topic_last_post_time'] <> 0) ? '		<lastmod>' . gmdate('Y-m-d\TH:i:s+00:00', (int) $row['topic_last_post_time']) . '</lastmod>' . "\n" : '';
-				$xml .= '	</url>' . "\n";
+				$url_data[] = array(
+					'url'		=> $this->board_url .  '/viewtopic.' . $this->php_ext . '?f=' . $id . '&amp;t=' . $topic_row['topic_id'],
+					'time'	=> $topic_row['topic_last_post_time'],
+					'row'		=> $topic_row,
+					'start'	=> 0
+				);
 			}
 			// Topics with more that 1 Page
-			if ( $row['topic_posts_approved'] > $this->config['posts_per_page'] )
+			if ( $topic_row['topic_posts_approved'] > $this->config['posts_per_page'] )
 			{
-				$s = 0;
-				$pages = $row['topic_posts_approved'] / $this->config['posts_per_page'];
+				$start = 0;
+				$pages = $topic_row['topic_posts_approved'] / $this->config['posts_per_page'];
 				for ($i = 1; $i < $pages; $i++)
 				{
-					$s = $s + $this->config['posts_per_page'];
-					$xml .= '	<url>' . "\n";
-					$xml .= '		<loc>' . $board_url . '/viewtopic.' . $this->php_ext . '?f=' . $id . '&amp;t=' . $row['topic_id'] . '&amp;start=' . $s . '</loc>'. "\n";
-					$xml .= '		<lastmod>' . gmdate('Y-m-d\TH:i:s+00:00', $row['topic_last_post_time']) . '</lastmod>' .  "\n";
-					$xml .= '	</url>' . "\n";
+					$start = $start + $this->config['posts_per_page'];
+					$url_data[] = array(
+						'url'		=> $this->board_url . '/viewtopic.' . $this->php_ext . '?f=' . $id . '&amp;t=' . $topic_row['topic_id'] . '&amp;start=' . $start,
+						'time'	=> $topic_row['topic_last_post_time'],
+						'row'		=> $topic_row,
+						'start'	=> $start
+					);
 				}
 			}
 		}
-		$xml .= '</urlset>';
 
-		$headers = array(
-			'Content-Type'		=> 'application/xml; charset=UTF-8',
-		);
-		return new Response($xml, '200', $headers);
+		return $this->output_sitemap($url_data, $type = 'urlset');
 	}
 
+	/**
+	 * Generate sitemap index
+	 *
+	 * @return object
+	 */
 	public function index()
 	{
-		$board_url = generate_board_url();
-		$style_xsl = $board_url . '/'. $this->phpbb_extension_manager->get_extension_path('tas2580/sitemap', false) . 'style.xsl';
-
-		$xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-		$xml .= '<?xml-stylesheet type="text/xsl" href="' . $style_xsl . '" ?>' . "\n";
-		$xml .= '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
-
 		$sql = 'SELECT forum_id, forum_name, forum_last_post_time
 			FROM ' . FORUMS_TABLE . '
 			WHERE forum_type = ' . (int) FORUM_POST . '
@@ -139,13 +160,55 @@ class sitemap
 		{
 			if ($this->auth->acl_get('f_list', $row['forum_id']))
 			{
-				$xml .= '	<sitemap>' . "\n";
-				$xml .= '		<loc>' . $this->helper->route('tas2580_sitemap_sitemap', array('id' => $row['forum_id']), true, '', \Symfony\Component\Routing\Generator\UrlGeneratorInterface::ABSOLUTE_URL) . '</loc>' . "\n";
-				$xml .= ($row['forum_last_post_time'] <> 0) ? '		<lastmod>' . gmdate('Y-m-d\TH:i:s+00:00', (int) $row['forum_last_post_time']) . '</lastmod>' . "\n" : '';
-				$xml .= '	</sitemap>' . "\n";
+				$url_data[] = array(
+					'url'		=> $this->helper->route('tas2580_sitemap_sitemap', array('id' => $row['forum_id']), true, '', \Symfony\Component\Routing\Generator\UrlGeneratorInterface::ABSOLUTE_URL),
+					'time'	=> $row['forum_last_post_time'],
+					'row'		=> $row,
+					'start'	=> 0
+				);
 			}
 		}
-		$xml .= '</sitemapindex>';
+		return $this->output_sitemap($url_data, $type = 'urlset');
+	}
+
+	/**
+	 * Generate the XML sitemap
+	 *
+	 * @param array	$url_data
+	 * @param string	$type
+	 * @return Response
+	 */
+	private function output_sitemap($url_data, $type = 'sitemapindex')
+	{
+		$style_xsl = $this->board_url . '/'. $this->phpbb_extension_manager->get_extension_path('tas2580/sitemap', false) . 'style.xsl';
+
+		$xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+		$xml .= '<?xml-stylesheet type="text/xsl" href="' . $style_xsl . '" ?>' . "\n";
+		$xml .= '<' . $type . ' xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+
+		/**
+		* Modify the sitemap link before output
+		*
+		* @event tas2580.sitemap_modify_before_output
+		* @var	string	type			Type of the sitemap (sitemapindex or urlset)
+		* @var	array		url_data		URL informations
+		* @since 0.1.4
+		*/
+		$vars = array(
+			'type',
+			'url_data',
+		);
+		extract($this->phpbb_dispatcher->trigger_event('tas2580.sitemap_modify_before_output', compact($vars)));
+
+		$tag = ($type == 'sitemapindex') ? 'sitemap' : 'url';
+		foreach($url_data as $data)
+		{
+			$xml .= '	<' . $tag . '>' . "\n";
+			$xml .= '		<loc>' . $data['url'] . '</loc>'. "\n";
+			$xml .= ($data['time'] <> 0) ? '		<lastmod>' . gmdate('Y-m-d\TH:i:s+00:00', (int) $data['time']) . '</lastmod>' .  "\n" : '';
+			$xml .= '	</' . $tag . '>' . "\n";
+		}
+		$xml .= '</' . $type . '>';
 
 		$headers = array(
 			'Content-Type'		=> 'application/xml; charset=UTF-8',
