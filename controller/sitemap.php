@@ -201,7 +201,7 @@ class sitemap
 		extract($this->phpbb_dispatcher->trigger_event('tas2580.sitemap_modify_before_output', compact($vars)));
 
 		$tag = ($type == 'sitemapindex') ? 'sitemap' : 'url';
-		foreach($url_data as $data)
+		foreach ($url_data as $data)
 		{
 			$xml .= '	<' . $tag . '>' . "\n";
 			$xml .= '		<loc>' . $data['url'] . '</loc>'. "\n";
