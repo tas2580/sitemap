@@ -168,7 +168,7 @@ class sitemap
 				);
 			}
 		}
-		return $this->output_sitemap($url_data, $type = 'urlset');
+		return $this->output_sitemap($url_data, $type = 'sitemapindex');
 	}
 
 	/**
