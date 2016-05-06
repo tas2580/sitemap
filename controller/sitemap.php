@@ -85,7 +85,7 @@ class sitemap
 		);
 
 		// Forums with more that 1 Page
-		if ($row['forum_topics'] > $this->config['topics_per_page'])
+		if (isset($row['forum_topics']) && ($row['forum_topics'] > $this->config['topics_per_page']))
 		{
 			$start = 0;
 			$pages = $row['forum_topics'] / $this->config['topics_per_page'];
