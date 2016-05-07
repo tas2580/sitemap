@@ -37,12 +37,12 @@ class sitemap
 	/**
 	* Constructor
 	*
-	* @param \phpbb\auth\auth					$auth					Auth object
-	* @param \phpbb\config\config				$config					Config object
-	* @param \phpbb\db\driver\driver_interface		$db						Database object
-	* @param \phpbb\controller\helper				$helper					Helper object
-	* @param string							$php_ext					phpEx
-	* @param \phpbb_extension_manager			$phpbb_extension_manager    phpbb_extension_manager
+	* @param \phpbb\auth\auth						$auth						Auth object
+	* @param \phpbb\config\config					$config						Config object
+	* @param \phpbb\db\driver\driver_interface		$db							Database object
+	* @param \phpbb\controller\helper				$helper						Helper object
+	* @param string									$php_ext					phpEx
+	* @param \phpbb_extension_manager				$phpbb_extension_manager    phpbb_extension_manager
 	*/
 	public function __construct(\phpbb\auth\auth $auth, \phpbb\config\config $config, \phpbb\db\driver\driver_interface $db, \phpbb\controller\helper $helper, \phpbb\event\dispatcher_interface $phpbb_dispatcher, $php_ext, $phpbb_extension_manager)
 	{
@@ -79,9 +79,9 @@ class sitemap
 		// URL for the forum
 		$url_data[] = array(
 			'url'		=> $this->board_url . '/viewforum.' . $this->php_ext . '?f=' . $id,
-			'time'	=> $row['forum_last_post_time'],
+			'time'		=> $row['forum_last_post_time'],
 			'row'		=> $row,
-			'start'	=> 0
+			'start'		=> 0
 		);
 
 		// Forums with more that 1 Page
@@ -94,9 +94,9 @@ class sitemap
 				$start = $start + $this->config['topics_per_page'];
 				$url_data[] = array(
 					'url'		=> $this->board_url . '/viewforum.' . $this->php_ext . '?f=' . $id . '&amp;start=' . $start,
-					'time'	=> $row['forum_last_post_time'],
+					'time'		=> $row['forum_last_post_time'],
 					'row'		=> $row,
-					'start'	=> $start
+					'start'		=> $start
 				);
 			}
 		}
@@ -118,9 +118,9 @@ class sitemap
 			{
 				$url_data[] = array(
 					'url'		=> $this->board_url .  '/viewtopic.' . $this->php_ext . '?f=' . $id . '&amp;t=' . $topic_row['topic_id'],
-					'time'	=> $topic_row['topic_last_post_time'],
+					'time'		=> $topic_row['topic_last_post_time'],
 					'row'		=> $topic_row,
-					'start'	=> 0
+					'start'		=> 0
 				);
 			}
 			// Topics with more that 1 Page
@@ -133,9 +133,9 @@ class sitemap
 					$start = $start + $this->config['posts_per_page'];
 					$url_data[] = array(
 						'url'		=> $this->board_url . '/viewtopic.' . $this->php_ext . '?f=' . $id . '&amp;t=' . $topic_row['topic_id'] . '&amp;start=' . $start,
-						'time'	=> $topic_row['topic_last_post_time'],
+						'time'		=> $topic_row['topic_last_post_time'],
 						'row'		=> $topic_row,
-						'start'	=> $start
+						'start'		=> $start
 					);
 				}
 			}
@@ -162,9 +162,9 @@ class sitemap
 			{
 				$url_data[] = array(
 					'url'		=> $this->helper->route('tas2580_sitemap_sitemap', array('id' => $row['forum_id']), true, '', \Symfony\Component\Routing\Generator\UrlGeneratorInterface::ABSOLUTE_URL),
-					'time'	=> $row['forum_last_post_time'],
+					'time'		=> $row['forum_last_post_time'],
 					'row'		=> $row,
-					'start'	=> 0
+					'start'		=> 0
 				);
 			}
 		}
