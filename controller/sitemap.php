@@ -198,7 +198,7 @@ class sitemap
 			'type',
 			'url_data',
 		);
-		extract($this->phpbb_dispatcher->trigger_event('tas2580.sitemap_modify_before_output', compact($vars)));
+		extract($this->phpbb_dispatcher->trigger_event('tas2580.sitemap.modify_before_output', compact($vars)));
 
 		$tag = ($type == 'sitemapindex') ? 'sitemap' : 'url';
 		foreach ($url_data as $data)
