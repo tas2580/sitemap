@@ -189,7 +189,7 @@ class sitemap
 		/**
 		* Modify the sitemap link before output
 		*
-		* @event tas2580.sitemap_modify_before_output
+		* @event tas2580.sitemap.modify_before_output
 		* @var	string	type			Type of the sitemap (sitemapindex or urlset)
 		* @var	array		url_data		URL informations
 		* @since 0.1.4
