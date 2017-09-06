@@ -102,7 +102,7 @@ class sitemap
 		}
 
 		// Get all topics in the forum
-		$sql = 'SELECT topic_id, topic_title, topic_last_post_time, topic_status, topic_posts_approved
+		$sql = 'SELECT topic_id, topic_title, topic_last_post_time, topic_status, topic_posts_approved, topic_visibility
 			FROM ' . TOPICS_TABLE . '
 			WHERE forum_id = ' . (int) $id;
 		$result = $this->db->sql_query($sql);
@@ -112,9 +112,8 @@ class sitemap
 			$topic_row['forum_id'] = $id;
 			$topic_row['forum_name'] = $row['forum_name'];
 			$topic_row['forum_last_post_time'] = $row['forum_last_post_time'];
-
 			// URL for topic
-			if ($topic_row['topic_status'] <> ITEM_MOVED)
+			if (($topic_row['topic_visibility'] == ITEM_APPROVED) && ($topic_row['topic_status'] <> ITEM_MOVED))
 			{
 				$url_data[] = array(
 					'url'		=> $this->board_url .  '/viewtopic.' . $this->php_ext . '?f=' . $id . '&amp;t=' . $topic_row['topic_id'],
@@ -122,21 +121,21 @@ class sitemap
 					'row'		=> $topic_row,
 					'start'		=> 0
 				);
-			}
-			// Topics with more that 1 Page
-			if ( $topic_row['topic_posts_approved'] > $this->config['posts_per_page'] )
-			{
-				$start = 0;
-				$pages = $topic_row['topic_posts_approved'] / $this->config['posts_per_page'];
-				for ($i = 1; $i < $pages; $i++)
+				// Topics with more that 1 Page
+				if ( $topic_row['topic_posts_approved'] > $this->config['posts_per_page'] )
 				{
-					$start = $start + $this->config['posts_per_page'];
-					$url_data[] = array(
-						'url'		=> $this->board_url . '/viewtopic.' . $this->php_ext . '?f=' . $id . '&amp;t=' . $topic_row['topic_id'] . '&amp;start=' . $start,
-						'time'		=> $topic_row['topic_last_post_time'],
-						'row'		=> $topic_row,
-						'start'		=> $start
-					);
+					$start = 0;
+					$pages = $topic_row['topic_posts_approved'] / $this->config['posts_per_page'];
+					for ($i = 1; $i < $pages; $i++)
+					{
+						$start = $start + $this->config['posts_per_page'];
+						$url_data[] = array(
+							'url'		=> $this->board_url . '/viewtopic.' . $this->php_ext . '?f=' . $id . '&amp;t=' . $topic_row['topic_id'] . '&amp;start=' . $start,
+							'time'		=> $topic_row['topic_last_post_time'],
+							'row'		=> $topic_row,
+							'start'		=> $start
+						);
+					}
 				}
 			}
 		}
