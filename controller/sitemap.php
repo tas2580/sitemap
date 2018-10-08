@@ -129,7 +129,7 @@ class sitemap
 			while ($start < $topic_row['topic_posts_approved']);
 		}
 
-		return $this->output_sitemap($url_data, $type = 'urlset');
+		return $this->output_sitemap($url_data, 'urlset');
 	}
 
 	/**
@@ -156,7 +156,7 @@ class sitemap
 				);
 			}
 		}
-		return $this->output_sitemap($url_data, $type = 'sitemapindex');
+		return $this->output_sitemap($url_data, 'sitemapindex');
 	}
 
 	/**
