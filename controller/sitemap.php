@@ -70,36 +70,30 @@ class sitemap
 			trigger_error('SORRY_AUTH_READ');
 		}
 
-		$sql = 'SELECT forum_id, forum_name, forum_last_post_time
+		$sql = 'SELECT forum_id, forum_name, forum_last_post_time, forum_topics_approved
 			FROM ' . FORUMS_TABLE . '
 			WHERE forum_id = ' . (int) $id;
 		$result = $this->db->sql_query($sql);
 		$row = $this->db->sql_fetchrow($result);
 
-		// URL for the forum
-		$url_data[] = array(
-			'url'		=> $this->board_url . '/viewforum.' . $this->php_ext . '?f=' . $id,
-			'time'		=> $row['forum_last_post_time'],
-			'row'		=> $row,
-			'start'		=> 0
-		);
-
-		// Forums with more that 1 Page
-		if (isset($row['forum_topics']) && ($row['forum_topics'] > $this->config['topics_per_page']))
+		$start = 0
+		do
 		{
-			$start = 0;
-			$pages = $row['forum_topics'] / $this->config['topics_per_page'];
-			for ($i = 1; $i < $pages; $i++)
+			// URL for the forum
+			$url = $this->board_url . '/viewforum.' . $this->php_ext . '?f=' . $id;
+			if ($start > 0)
 			{
-				$start = $start + $this->config['topics_per_page'];
-				$url_data[] = array(
-					'url'		=> $this->board_url . '/viewforum.' . $this->php_ext . '?f=' . $id . '&amp;start=' . $start,
-					'time'		=> $row['forum_last_post_time'],
-					'row'		=> $row,
-					'start'		=> $start
-				);
+				$url .= '&amp;start=' . $start;
 			}
+			$url_data[] = array(
+				'url'	=> $url,
+				'time'	=> $row['forum_last_post_time'],
+				'row'	=> $row,
+				'start'	=> $start
+			);
+			$start += $this->config['topics_per_page'];
 		}
+		while ($start < $row['forum_topics_approved']);
 
 		// Get all topics in the forum
 		$sql = 'SELECT topic_id, topic_title, topic_last_post_time, topic_status, topic_posts_approved, topic_visibility
