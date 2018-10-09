@@ -9,6 +9,8 @@
 
 namespace tas2580\sitemap\controller;
 
+define('SQL_CACHE_TIME',	120);  //only update the data after X seconds to reduce sql load a little 
+
 use Symfony\Component\HttpFoundation\Response;
 
 class sitemap
@@ -73,7 +75,7 @@ class sitemap
 		$sql = 'SELECT forum_id, forum_name, forum_last_post_time
 			FROM ' . FORUMS_TABLE . '
 			WHERE forum_id = ' . (int) $id;
-		$result = $this->db->sql_query($sql);
+		$result = $this->db->sql_query($sql, SQL_CACHE_TIME);
 		$row = $this->db->sql_fetchrow($result);
 
 		// URL for the forum
@@ -105,7 +107,7 @@ class sitemap
 		$sql = 'SELECT topic_id, topic_title, topic_last_post_time, topic_status, topic_posts_approved, topic_visibility
 			FROM ' . TOPICS_TABLE . '
 			WHERE forum_id = ' . (int) $id;
-		$result = $this->db->sql_query($sql);
+		$result = $this->db->sql_query($sql, SQL_CACHE_TIME);
 		while ($topic_row = $this->db->sql_fetchrow($result))
 		{
 			// Put forum data to each topic row
@@ -154,7 +156,7 @@ class sitemap
 			FROM ' . FORUMS_TABLE . '
 			WHERE forum_type = ' . (int) FORUM_POST . '
 			ORDER BY left_id ASC';
-		$result = $this->db->sql_query($sql);
+		$result = $this->db->sql_query($sql, SQL_CACHE_TIME);
 		while ($row = $this->db->sql_fetchrow($result))
 		{
 			if ($this->auth->acl_get('f_list', $row['forum_id']))
