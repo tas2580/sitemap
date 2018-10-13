@@ -8,6 +8,9 @@ DESCRIPTION
 -------
 Creates an XML sitemap for the phpBB forum. You can access the sitemap unter <code>YOUR_FORUM/app.php/sitemap.xml</code>
 
+### SEO URLs
+If you search for URL rewriting, look at <a href="https://github.com/tas2580/seourls">this Extension</a>
+
 INSTALATION
 ----------
 To install this extension download it from here and upload the files in your forum under <b>/ext/tas2580/sitemap</b>.
