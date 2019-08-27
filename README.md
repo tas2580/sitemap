@@ -1,17 +1,22 @@
-<img src="https://tas2580.net/downloads/image-22.png" width="600" height="80" alt="phpBB 3.1 - Sitemap" />
+# phpBB XML sitemap
 
-This is an extension for the phpBB forums software. You need an instalation of phpBB 3.1.x to use this.
+This is an extension for the phpBB forums software. You need an instalation of <a href="https://github.com/phpbb/phpbb">phpBB</a> 3.1.x or 3.2.x to use this extension.
+
+[![Download](https://raw.githubusercontent.com/tas2580/privacyprotection/master/.github/button_download.png)](https://tas2580.net/downloads/phpbb-sitemap/) [![Donate](https://raw.githubusercontent.com/tas2580/privacyprotection/master/.github/button_donate.png)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=S8PXGAJZP9GWN)
 
 DESCRIPTION
 -------
 Creates an XML sitemap for the phpBB forum. You can access the sitemap unter <code>YOUR_FORUM/app.php/sitemap.xml</code>
+
+### SEO URLs
+If you search for URL rewriting, look at <a href="https://github.com/tas2580/seourls">this Extension</a>
 
 INSTALATION
 ----------
 To install this extension download it from here and upload the files in your forum under <b>/ext/tas2580/sitemap</b>.
 After that go to the Admin panel of your forum and navigate in to Customise -> Extension Management -> Extensions. Search this extension in the list of extensions and click on Enable.
 
-After the installation you can find your sitemap under YOUR_FORUM_URL/app.php/sitemap.xml
+After the installation you can find your sitemap under <b>{YOUR_FORUM_URL}/app.php/sitemap.xml</b> or <b>{YOUR_FORUM_URL}/sitemap.xml</b>
 
 SUPPORT
 -------
