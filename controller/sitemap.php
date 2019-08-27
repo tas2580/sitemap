@@ -77,6 +77,7 @@ class sitemap
 			WHERE forum_id = ' . (int) $id;
 		$result = $this->db->sql_query($sql, SQL_CACHE_TIME);
 		$row = $this->db->sql_fetchrow($result);
+		$this->db->sql_freeresult($result);
 
 		$start = 0;
 		do
@@ -130,6 +131,7 @@ class sitemap
 			}
 			while ($start < $topic_row['topic_posts_approved']);
 		}
+		$this->db->sql_freeresult($result);
 
 		return $this->output_sitemap($url_data, 'urlset');
 	}
@@ -158,6 +160,7 @@ class sitemap
 				);
 			}
 		}
+		$this->db->sql_freeresult($result);
 		return $this->output_sitemap($url_data, 'sitemapindex');
 	}
 
