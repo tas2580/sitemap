@@ -115,7 +115,7 @@ class sitemap
 			do
 			{
 				// URL for topic
-				$url = $this->board_url . '/viewtopic.' . $this->php_ext . '?f=' . $id . '&amp;t=' . $topic_row['topic_id'];
+				$url = $this->board_url . '/viewtopic.' . $this->php_ext . '?t=' . $topic_row['topic_id'];
 				if ($start > 0)
 				{
 					$url .= '&amp;start=' . $start;
