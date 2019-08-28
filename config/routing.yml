@@ -2,5 +2,9 @@ tas2580_sitemap_sitemapindex:
     pattern: /sitemap.xml
     defaults: { _controller: tas2580.sitemap.sitemap:index }
 tas2580_sitemap_sitemap:
-    pattern: /sitemap-{id}.xml
+    pattern: /sitemap-{id}-{first}-{last}.xml
     defaults: { _controller: tas2580.sitemap.sitemap:sitemap }
+    requirements:
+        id: '\d+'
+        first: '\d+'
+        last: '\d+'
