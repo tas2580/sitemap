@@ -9,7 +9,8 @@
 
 namespace tas2580\sitemap\controller;
 
-define('SQL_CACHE_TIME',	120);  //only update the data after X seconds to reduce sql load a little 
+define('MAX_MAP_SIZE',	1000);  // maximum entries per map file, MUST be no larger than 50000
+define('INDEX_FORUM_PAGES',	false);  // set to true to include viewforum pages in the sitemap
 
 use Symfony\Component\HttpFoundation\Response;
 
@@ -63,9 +64,11 @@ class sitemap
 	 * Generate sitemap for a forum
 	 *
 	 * @param int		$id		The forum ID
+	 * @param int		$first	The first topic ID (0 to include viewforum pages)
+	 * @param int		$last	The last topic ID
 	 * @return object
 	 */
-	public function sitemap($id)
+	public function sitemap($id, $first, $last)
 	{
 		if (!$this->auth->acl_get('f_list', $id))
 		{
@@ -75,60 +78,71 @@ class sitemap
 		$sql = 'SELECT forum_id, forum_name, forum_last_post_time, forum_topics_approved
 			FROM ' . FORUMS_TABLE . '
 			WHERE forum_id = ' . (int) $id;
-		$result = $this->db->sql_query($sql, SQL_CACHE_TIME);
+		$result = $this->db->sql_query($sql);
 		$row = $this->db->sql_fetchrow($result);
+		$this->db->sql_freeresult($result);
 
-		$start = 0;
-		do
+		// generate map of viewforum pages
+		if ($first == 0)
 		{
-			// URL for the forum
-			$url = $this->board_url . '/viewforum.' . $this->php_ext . '?f=' . $id;
-			if ($start > 0)
-			{
-				$url .= '&amp;start=' . $start;
-			}
-			$url_data[] = array(
-				'url'	=> $url,
-				'time'	=> $row['forum_last_post_time'],
-				'row'	=> $row,
-				'start'	=> $start
-			);
-			$start += $this->config['topics_per_page'];
-		}
-		while ($start < $row['forum_topics_approved']);
-
-		// Get all topics in the forum
-		$sql = 'SELECT topic_id, topic_title, topic_last_post_time, topic_posts_approved
-			FROM ' . TOPICS_TABLE . '
-			WHERE forum_id = ' . (int) $id . '
-			AND topic_visibility = ' . ITEM_APPROVED . '
-			AND topic_status <> ' . ITEM_MOVED;
-		$result = $this->db->sql_query($sql, SQL_CACHE_TIME);
-		while ($topic_row = $this->db->sql_fetchrow($result))
-		{
-			// Put forum data to each topic row
-			$topic_row['forum_id'] = $id;
-			$topic_row['forum_name'] = $row['forum_name'];
-			$topic_row['forum_last_post_time'] = $row['forum_last_post_time'];
-
 			$start = 0;
 			do
 			{
-				// URL for topic
-				$url = $this->board_url . '/viewtopic.' . $this->php_ext . '?f=' . $id . '&amp;t=' . $topic_row['topic_id'];
+				// URL for the forum
+				$url = $this->board_url . '/viewforum.' . $this->php_ext . '?f=' . $id;
 				if ($start > 0)
 				{
 					$url .= '&amp;start=' . $start;
 				}
 				$url_data[] = array(
 					'url'	=> $url,
-					'time'	=> $topic_row['topic_last_post_time'],
-					'row'	=> $topic_row,
+					'time'	=> $row['forum_last_post_time'],
+					'row'	=> $row,
 					'start'	=> $start
 				);
-				$start += $this->config['posts_per_page'];
+				$start += $this->config['topics_per_page'];
 			}
-			while ($start < $topic_row['topic_posts_approved']);
+			while ($start < $row['forum_topics_approved']);
+		}
+        else
+		{
+			// Generate map of topics within selected range
+			$sql = 'SELECT topic_id, topic_title, topic_last_post_time, topic_posts_approved
+				FROM ' . TOPICS_TABLE . '
+				WHERE forum_id = ' . (int) $id . '
+				AND topic_id >= ' . $first . '
+				AND topic_id <= ' . $last . '
+				AND topic_visibility = ' . ITEM_APPROVED . '
+				AND topic_status <> ' . ITEM_MOVED . '
+				ORDER BY topic_id ASC';
+			$result = $this->db->sql_query($sql);
+			while ($topic_row = $this->db->sql_fetchrow($result))
+			{
+				// Put forum data to each topic row
+				$topic_row['forum_id'] = $id;
+				$topic_row['forum_name'] = $row['forum_name'];
+				$topic_row['forum_last_post_time'] = $row['forum_last_post_time'];
+
+				$start = 0;
+				do
+				{
+					// URL for topic
+					$url = $this->board_url . '/viewtopic.' . $this->php_ext . '?t=' . $topic_row['topic_id'];
+					if ($start > 0)
+					{
+						$url .= '&amp;start=' . $start;
+					}
+					$url_data[] = array(
+						'url'	=> $url,
+						'time'	=> $topic_row['topic_last_post_time'],
+						'row'	=> $topic_row,
+						'start'	=> $start
+					);
+					$start += $this->config['posts_per_page'];
+				}
+				while ($start < $topic_row['topic_posts_approved']);
+			}
+			$this->db->sql_freeresult($result);
 		}
 
 		return $this->output_sitemap($url_data, 'urlset');
@@ -144,20 +158,58 @@ class sitemap
 		$sql = 'SELECT forum_id, forum_name, forum_last_post_time
 			FROM ' . FORUMS_TABLE . '
 			WHERE forum_type = ' . (int) FORUM_POST . '
-			ORDER BY left_id ASC';
-		$result = $this->db->sql_query($sql, SQL_CACHE_TIME);
+			ORDER BY forum_id ASC';
+		$result = $this->db->sql_query($sql);
 		while ($row = $this->db->sql_fetchrow($result))
 		{
-			if ($this->auth->acl_get('f_list', $row['forum_id']))
+            $forum_id = $row['forum_id'];
+			if ($this->auth->acl_get('f_list', $forum_id))
 			{
-				$url_data[] = array(
-					'url'		=> $this->helper->route('tas2580_sitemap_sitemap', array('id' => $row['forum_id']), true, '', \Symfony\Component\Routing\Generator\UrlGeneratorInterface::ABSOLUTE_URL),
-					'time'		=> $row['forum_last_post_time'],
-					'row'		=> $row,
-					'start'		=> 0
-				);
+				// optionally we can add viewforum pages to the map
+                if (INDEX_FORUM_PAGES)
+				{
+					$url_data[] = array(
+						'url'		=> $this->helper->route('tas2580_sitemap_sitemap', array('id' => $forum_id, 'first' => 0, 'last' => 0), true, '', \Symfony\Component\Routing\Generator\UrlGeneratorInterface::ABSOLUTE_URL),
+						'time'		=> $row['forum_last_post_time'],
+						'row'		=> $row,
+						'start'		=> 0
+					);
+				}
+				// break the topics into smaller maps if required
+				$begin_topic_id = 1;
+                do
+				{
+					// Get all topics in the forum
+					$sql = 'SELECT COUNT(this_group.topic_id) as count, MAX(this_group.topic_last_post_time) as latest_time, MAX(this_group.topic_id) as last_topic_id
+                        FROM (
+						SELECT topic_id, topic_last_post_time
+						FROM ' . TOPICS_TABLE . '
+						WHERE forum_id = ' . (int) $forum_id . '
+                        AND topic_id >= ' . (int) $begin_topic_id . '
+                        ORDER BY topic_id ASC
+                        LIMIT ' . (int) MAX_MAP_SIZE . ')
+						AS this_group' ;
+					$result2 = $this->db->sql_query($sql);
+					$row2 = $this->db->sql_fetchrow($result2);
+					$this->db->sql_freeresult($result2);
+                    if (!$row2['count'])
+					{
+						// no more topics
+                        break;
+					}
+					$end_topic_id = $row2['last_topic_id'];
+					$url_data[] = array(
+						'url'		=> $this->helper->route('tas2580_sitemap_sitemap', array('id' => $forum_id, 'first' => $begin_topic_id, 'last' => $end_topic_id), true, '', \Symfony\Component\Routing\Generator\UrlGeneratorInterface::ABSOLUTE_URL),
+						'time'		=> $row2['latest_time'],
+						'row'		=> $row,
+						'start'		=> 0
+					);
+					$begin_topic_id = $end_topic_id + 1;
+				}
+                while (1);
 			}
 		}
+		$this->db->sql_freeresult($result);
 		return $this->output_sitemap($url_data, 'sitemapindex');
 	}
 
